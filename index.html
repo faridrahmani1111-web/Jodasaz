@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0f18">
+<title>تانک جداساز — مهندس رحمانی</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;width:100%;overflow:hidden;background:#0a0f18;
+    font-family:Vazirmatn,Tahoma,sans-serif;color:#e8f0ff;
+    user-select:none;-webkit-user-select:none;touch-action:none;
+    position:fixed;overscroll-behavior:none}
+  canvas{display:block;position:fixed;inset:0;width:100vw;height:100vh;touch-action:none}
+
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+
+  .topbar{position:absolute;top:0;left:0;right:0;display:flex;
+    justify-content:space-between;align-items:flex-start;
+    padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px));gap:8px}
+
+  .hpwrap{width:36%;max-width:150px}
+  .hplabel{font-size:10px;opacity:.6;margin-bottom:3px}
+  .hpbar{height:12px;border-radius:7px;background:rgba(22,32,47,.85);
+    border:1px solid #22334a;overflow:hidden}
+  .hpfill{height:100%;width:100%;border-radius:7px;
+    background:linear-gradient(90deg,#00e5a0,#39d0ff);transition:width .18s}
+
+  .stats{display:flex;gap:5px}
+  .stat{background:rgba(16,26,40,.85);border:1px solid #1f3149;border-radius:9px;
+    padding:5px 8px;text-align:center;min-width:52px;backdrop-filter:blur(6px)}
+  .stat .k{display:block;font-size:9px;opacity:.55;margin-bottom:1px}
+  .stat .v{display:block;font-size:14px;font-weight:900;color:#7fe7ff}
+
+  .player-name{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));
+    left:50%;transform:translateX(-50%);
+    background:rgba(16,26,40,.85);border:1px solid #1f3149;border-radius:9px;
+    padding:5px 12px;font-size:11px;font-weight:700;color:#a5d6a7;
+    backdrop-filter:blur(6px);white-space:nowrap;max-width:40%;
+    overflow:hidden;text-overflow:ellipsis;display:none}
+  .player-name.show{display:block}
+
+  .timer-wrap{position:absolute;top:calc(68px + env(safe-area-inset-top,0px));
+    left:50%;transform:translateX(-50%);width:72%;max-width:340px;
+    background:rgba(10,18,28,.85);border:2px solid #22334a;border-radius:12px;
+    padding:5px;backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
+  .timer-wrap.show{opacity:1}
+  .timer-bar{height:14px;border-radius:8px;background:#0a1420;overflow:hidden;
+    position:relative}
+  .timer-fill{height:100%;width:100%;border-radius:8px;
+    background:linear-gradient(90deg,#00e5a0,#4fc3f7);
+    transition:width .1s linear}
+  .timer-fill.warn{background:linear-gradient(90deg,#ffb300,#ff6b00)}
+  .timer-fill.danger{background:linear-gradient(90deg,#ff4444,#ff0000);
+    animation:timerPulse .4s ease-in-out infinite}
+  @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:.55}}
+  .timer-label{position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;font-size:11px;font-weight:900;color:#fff;
+    text-shadow:0 1px 3px rgba(0,0,0,.9);letter-spacing:.5px}
+
+  .toolbar{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    left:8px;right:8px;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
+    pointer-events:auto}
+  .tool{pointer-events:auto;cursor:pointer;background:rgba(14,22,34,.9);
+    border:2px solid #1d2b3f;border-radius:10px;padding:8px 2px;text-align:center;
+    transition:.15s;min-height:60px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;position:relative}
+  .tool.on{border-color:var(--c);background:rgba(20,34,52,.98);
+    box-shadow:0 0 14px -2px var(--c),inset 0 0 12px -4px var(--c);
+    transform:translateY(-3px)}
+  .tool .icon{font-size:20px;line-height:1}
+  .tool .name{font-size:9.5px;font-weight:700;color:#cfe3f7;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .tool.on .name{color:#fff}
+  .tool .key{position:absolute;top:-6px;right:-6px;width:15px;height:15px;
+    border-radius:50%;background:var(--c);color:#05090f;font-size:9px;
+    font-weight:900;display:flex;align-items:center;justify-content:center}
+
+  .fire-btn{position:fixed;right:14px;
+    bottom:calc(90px + env(safe-area-inset-bottom,0px));
+    width:76px;height:76px;border-radius:50%;
+    border:3px solid rgba(255,82,82,.85);
+    background:radial-gradient(circle,rgba(255,82,82,.35),rgba(255,82,82,.12));
+    box-shadow:0 0 30px -6px #ff5252,inset 0 0 20px rgba(255,82,82,.25);
+    color:#ffdcdc;font-size:26px;display:none;flex-direction:column;
+    align-items:center;justify-content:center;font-family:inherit;font-weight:900;
+    z-index:8;pointer-events:auto;cursor:pointer;transition:transform .08s;padding:0;
+    touch-action:none}
+  .fire-btn.show{display:flex}
+  .fire-btn:active{transform:scale(.9);
+    background:radial-gradient(circle,rgba(255,82,82,.6),rgba(255,82,82,.3))}
+  .fire-btn .lbl{font-size:10px;margin-top:1px;color:#ffd0d0}
+
+  .overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;
+    justify-content:center;background:rgba(4,8,14,.94);backdrop-filter:blur(9px);
+    padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+  .overlay.hide{display:none}
+  .panel{width:94vw;max-width:520px;max-height:94vh;overflow:auto;text-align:center;
+    background:linear-gradient(160deg,#101a2a,#0a111b);border:1px solid #1e2f45;
+    border-radius:18px;padding:20px 16px;box-shadow:0 20px 70px rgba(0,0,0,.7);
+    -webkit-overflow-scrolling:touch}
+  .panel h1{font-size:30px;font-weight:900;
+    background:linear-gradient(90deg,#4fc3f7,#a5d6a7,#ffd54f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:4px}
+  .panel h2{font-size:24px;font-weight:900;color:#ff6b6b;margin-bottom:6px}
+  .panel .sub{opacity:.75;margin:6px 0 10px;font-size:12.5px;line-height:1.8}
+  .panel .sub b{color:#7fe7ff}
+
+  .btn{pointer-events:auto;cursor:pointer;border:none;border-radius:13px;
+    padding:14px 40px;font-size:16px;font-weight:900;font-family:inherit;
+    color:#04121a;background:linear-gradient(135deg,#4fe0c0,#4fc3f7);
+    box-shadow:0 12px 30px -8px #4fc3f7;transition:.15s;margin-top:6px;
+    touch-action:manipulation}
+  .btn:active{transform:scale(.96)}
+
+  .credit{position:fixed;bottom:calc(4px + env(safe-area-inset-bottom,0px));
+    left:0;right:0;text-align:center;font-size:10px;opacity:.35;
+    pointer-events:none;z-index:4}
+
+  .name-input-wrap{margin:8px 0 12px}
+  .name-input-wrap label{display:block;font-size:11.5px;
+    color:#8fb2d0;margin-bottom:5px}
+  .name-input{width:100%;padding:11px 14px;font-size:16px;font-family:inherit;
+    font-weight:700;text-align:center;direction:rtl;
+    background:rgba(10,18,28,.85);border:2px solid #22334a;
+    border-radius:11px;color:#eaf4ff;outline:none;
+    transition:.15s;-webkit-appearance:none}
+  .name-input:focus{border-color:#4fc3f7;
+    box-shadow:0 0 14px -2px #4fc3f7;background:rgba(16,28,44,.95)}
+  .name-input::placeholder{color:#5a7a9a;font-weight:400}
+
+  .ref-table{width:100%;border-collapse:collapse;font-size:10.5px;
+    margin:4px 0 12px;text-align:right}
+  .ref-table th,.ref-table td{padding:4px 5px;
+    border-bottom:1px solid #17253a}
+  .ref-table th{color:#6f8aa8;font-weight:700;font-size:10px}
+  .ref-table td:first-child{color:#cfe3f7}
+  .ref-table td:last-child{font-weight:700}
+  .ref-table tr:last-child td{border-bottom:none}
+
+  .lb-box{background:rgba(10,18,28,.7);border:1px solid #1d2b3f;
+    border-radius:12px;padding:10px 12px;margin:10px 0}
+  .lb-title{font-size:12.5px;font-weight:900;color:#ffd54f;
+    margin-bottom:8px;text-align:center}
+  .lb-row{display:flex;align-items:center;gap:8px;padding:6px 4px;
+    border-bottom:1px solid rgba(23,37,58,.7);font-size:12px}
+  .lb-row:last-child{border-bottom:none}
+  .lb-rank{width:22px;height:22px;border-radius:50%;display:flex;
+    align-items:center;justify-content:center;font-weight:900;font-size:11px;
+    flex-shrink:0}
+  .lb-rank.r1{background:linear-gradient(135deg,#ffd54f,#ff9800);color:#1a1100}
+  .lb-rank.r2{background:linear-gradient(135deg,#e0e0e0,#9e9e9e);color:#1a1a1a}
+  .lb-rank.r3{background:linear-gradient(135deg,#cd7f32,#8d5524);color:#1a1100}
+  .lb-name{flex:1;text-align:right;color:#cfe3f7;font-weight:700;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lb-score{color:#7fe7ff;font-weight:900;font-size:12.5px;white-space:nowrap}
+  .lb-empty{text-align:center;font-size:11.5px;opacity:.5;padding:8px 0}
+
+  .badge{display:inline-block;background:linear-gradient(135deg,#ffd54f,#ff9800);
+    color:#1a1100;font-size:10px;font-weight:900;padding:3px 10px;
+    border-radius:10px;margin-bottom:6px}
+
+  .new-record{display:none;background:linear-gradient(135deg,#ffd54f,#ff9800);
+    color:#1a1100;font-size:13px;font-weight:900;padding:8px 16px;
+    border-radius:11px;margin:8px auto;max-width:80%;
+    animation:recordPulse 1s ease-in-out infinite}
+  .new-record.show{display:block}
+  @keyframes recordPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+  @media (max-height:640px){
+    .tool{padding:5px 2px;min-height:50px}
+    .tool .icon{font-size:16px}
+    .tool .name{font-size:8.5px}
+    .fire-btn{width:64px;height:64px;font-size:22px;
+      bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+    .panel h1{font-size:26px}
+    .panel{padding:14px 12px}
+    .ref-table{font-size:9.5px}
+    .ref-table th,.ref-table td{padding:3px 4px}
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="hud">
+  <div class="topbar">
+    <div class="hpwrap">
+      <div class="hplabel">سلامتی تانک</div>
+      <div class="hpbar"><div class="hpfill" id="hpfill"></div></div>
+    </div>
+    <div class="player-name" id="playerNameHUD"></div>
+    <div class="stats">
+      <div class="stat"><span class="k">امتیاز</span><span class="v" id="scoreEl">۰</span></div>
+      <div class="stat"><span class="k">موج</span><span class="v" id="waveEl">۰</span></div>
+      <div class="stat"><span class="k">کمبو</span><span class="v" id="comboEl">×۱</span></div>
+    </div>
+  </div>
+
+  <div class="timer-wrap" id="timerWrap">
+    <div class="timer-bar">
+      <div class="timer-fill" id="timerFill"></div>
+      <div class="timer-label" id="timerLabel">۱۰.۰</div>
+    </div>
+  </div>
+
+  <div class="toolbar" id="toolbar"></div>
+</div>
+
+<button class="fire-btn" id="fireBtn">
+  <span>💥</span>
+  <span class="lbl">شلیک</span>
+</button>
+
+<div class="credit">ساخته‌شده توسط مهندس رحمانی</div>
+
+<!-- صفحه شروع -->
+<div class="overlay" id="startScreen">
+  <div class="panel">
+    <div class="badge">تانک جداساز</div>
+    <h1>نبرد آزمایشگاه</h1>
+
+    <div class="name-input-wrap">
+      <label for="nameInput">نام دانش‌آموز</label>
+      <input type="text" id="nameInput" class="name-input"
+             placeholder="نام خود را بنویسید..." maxlength="20"
+             autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="lb-box">
+      <div class="lb-title">🏆 سه رکورد برتر</div>
+      <div id="lbListStart"></div>
+    </div>
+
+    <div class="sub" style="font-size:11.5px;margin-top:8px">
+      ابزار درست را انتخاب کن و قبل از تمام‌شدن زمان شلیک کن!<br>
+      <b>زمان از ۱۰ ثانیه شروع و هر موج کمتر می‌شود</b><br>
+      موج ۹ به بعد: جت جنگنده با فقط <b>۱ ثانیه</b>
+    </div>
+
+    <details style="margin:6px 0 8px">
+      <summary style="cursor:pointer;font-size:11.5px;color:#8fb2d0;
+        padding:6px;user-select:none">📖 جدول ابزارها را ببین</summary>
+      <table class="ref-table" style="margin-top:6px">
+        <tr><th>مخلوط</th><th>ابزار</th></tr>
+        <tr><td>آب و روغن / آب و نفت</td><td style="color:#4fc3f7">قیف جداکننده</td></tr>
+        <tr><td>آب و ماسه / آب و خاک</td><td style="color:#ffd54f">کاغذ صافی</td></tr>
+        <tr><td>ماسه و سنگریزه</td><td style="color:#a5d6a7">الک</td></tr>
+        <tr><td>شن و براده آهن / براده آهن و خاک</td><td style="color:#ef5350">آهنربا</td></tr>
+        <tr><td>کاه و گندم</td><td style="color:#ff9800">کمباین</td></tr>
+        <tr><td>آب و نمک / شکر / الکل / استون</td><td style="color:#ba68c8">تقطیر</td></tr>
+      </table>
+    </details>
+
+    <button class="btn" id="startBtn">شروع نبرد</button>
+  </div>
+</div>
+
+<!-- صفحه پایان -->
+<div class="overlay hide" id="overScreen">
+  <div class="panel">
+    <h2 id="overTitle">تانک از کار افتاد!</h2>
+    <div class="new-record" id="newRecord">🎉 رکورد جدید ثبت شد!</div>
+    <div class="sub">
+      امتیاز: <b id="finalScore">۰</b> &nbsp;|&nbsp; موج: <b id="finalWave">۰</b>
+    </div>
+
+    <div class="lb-box">
+      <div class="lb-title">🏆 سه رکورد برتر</div>
+      <div id="lbListEnd"></div>
+    </div>
+
+    <button class="btn" id="againBtn">دوباره بجنگ</button>
+    <button class="btn" id="menuBtn"
+      style="background:linear-gradient(135deg,#546e7a,#455a64);color:#eaf4ff;
+      box-shadow:0 12px 30px -8px #37474f;margin-top:8px">منوی اصلی</button>
+
+    <div class="sub" style="margin-top:12px;font-size:10.5px;opacity:.5">
+      ساخته‌شده توسط مهندس رحمانی
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= CANVAS ================= */
+  var canvas = document.getElementById('game');
+  var ctx = canvas.getContext('2d');
+  var W = 0, H = 0, focal = 0;
+  var FOV = Math.PI / 2.6;
+
+  function resize() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    focal = (W / 2) / Math.tan(FOV / 2);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', function () {
+    setTimeout(resize, 250);
+  });
+
+  /* ================= DATA ================= */
+  var TOOLS = [
+    { name: 'قیف جداکننده', short: 'قیف',    icon: '⚗️', color: '#4fc3f7' },
+    { name: 'کاغذ صافی',    short: 'صافی',   icon: '📄', color: '#ffd54f' },
+    { name: 'الک',          short: 'الک',    icon: '🕸️', color: '#a5d6a7' },
+    { name: 'آهنربا',       short: 'آهنربا', icon: '🧲', color: '#ef5350' },
+    { name: 'کمباین',       short: 'کمباین', icon: '🚜', color: '#ff9800' },
+    { name: 'تقطیر',        short: 'تقطیر',  icon: '🌡️', color: '#ba68c8' }
+  ];
+
+  var MIXTURES = [
+    { name: 'آب و روغن',       tool: 0, c1: '#ffb74d', c2: '#fff3c4' },
+    { name: 'آب و نفت',        tool: 0, c1: '#8d6e63', c2: '#4fc3f7' },
+    { name: 'آب و ماسه',       tool: 1, c1: '#4fa8d8', c2: '#c8a165' },
+    { name: 'آب و خاک',        tool: 1, c1: '#7ec8e3', c2: '#8b5a2b' },
+    { name: 'ماسه و سنگریزه',  tool: 2, c1: '#9e9e9e', c2: '#e0e0e0' },
+    { name: 'شن و براده آهن',  tool: 3, c1: '#6d6d6d', c2: '#b0bec5' },
+    { name: 'براده آهن و خاک', tool: 3, c1: '#5d4037', c2: '#b0bec5' },
+    { name: 'کاه و گندم',      tool: 4, c1: '#c9a227', c2: '#f5e6a8' },
+    { name: 'آب و نمک',        tool: 5, c1: '#4fc3f7', c2: '#ffffff' },
+    { name: 'آب و شکر',        tool: 5, c1: '#e3f2fd', c2: '#ffffff' },
+    { name: 'آب و الکل',       tool: 5, c1: '#9575cd', c2: '#e1bee7' },
+    { name: 'آب و استون',      tool: 5, c1: '#81d4fa', c2: '#fff9c4' }
+  ];
+
+  var JET_WAVE = 9;
+  var MAX_TIME = 10.0;
+  var MIN_TIME = 1.0;
+
+  /* ================= LEADERBOARD ================= */
+  var LB_KEY = 'separator_leaderboard_v1';
+
+  function getLeaderboard() {
+    try {
+      var data = localStorage.getItem(LB_KEY);
+      if (!data) return [];
+      var arr = JSON.parse(data);
+      if (!Array.isArray(arr)) return [];
+      return arr.slice(0, 3);
+    } catch (e) { return []; }
+  }
+
+  function saveToLeaderboard(name, score, wave) {
+    var lb = getLeaderboard();
+    var entry = {
+      name: String(name).slice(0, 20) || 'دانش‌آموز',
+      score: score,
+      wave: wave,
+      date: Date.now()
+    };
+    lb.push(entry);
+    lb.sort(function (a, b) { return b.score - a.score; });
+    lb = lb.slice(0, 3);
+    try {
+      localStorage.setItem(LB_KEY, JSON.stringify(lb));
+    } catch (e) {}
+    return { list: lb, entry: entry, isNew: lb.indexOf(entry) !== -1 };
+  }
+
+  function isTopThree(score) {
+    var lb = getLeaderboard();
+    if (lb.length < 3) return true;
+    if (score <= 0) return false;
+    return score > lb[lb.length - 1].score;
+  }
+
+  function renderLeaderboard(container, highlightEntry) {
+    container.innerHTML = '';
+    var lb = getLeaderboard();
+    if (lb.length === 0) {
+      var empty = document.createElement('div');
+      empty.className = 'lb-empty';
+      empty.textContent = 'هنوز رکوردی ثبت نشده — اولین نفر باش!';
+      container.appendChild(empty);
+      return;
+    }
+    for (var i = 0; i < lb.length; i++) {
+      var item = lb[i];
+      var row = document.createElement('div');
+      row.className = 'lb-row';
+      var isHighlight = highlightEntry &&
+        item.date === highlightEntry.date &&
+        item.name === highlightEntry.name;
+
+      var rank = document.createElement('div');
+      rank.className = 'lb-rank r' + (i + 1);
+      rank.textContent = toFa(i + 1);
+
+      var name = document.createElement('div');
+      name.className = 'lb-name';
+      name.textContent = item.name;
+      if (isHighlight) {
+        name.style.color = '#ffd54f';
+        name.textContent = '⭐ ' + item.name;
+      }
+
+      var score = document.createElement('div');
+      score.className = 'lb-score';
+      score.textContent = toFa(item.score) + ' امتیاز';
+
+      row.appendChild(rank);
+      row.appendChild(name);
+      row.appendChild(score);
+      container.appendChild(row);
+    }
+  }
+
+  /* ================= AUDIO ================= */
+  var actx = null;
+  function initAudio() {
+    if (!actx) {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) actx = new AC();
+      } catch (e) { actx = null; }
+    }
+    if (actx && actx.state === 'suspended') actx.resume().catch(function(){});
+  }
+  function beep(freq, dur, type, vol, slide) {
+    if (!actx) return;
+    type = type || 'square';
+    vol = vol == null ? 0.05 : vol;
+    slide = slide || 0;
+    try {
+      var t0 = actx.currentTime;
+      var o = actx.createOscillator();
+      var g = actx.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t0);
+      if (slide) o.frequency.exponentialRampToValueAtTime(
+        Math.max(40, freq + slide), t0 + dur);
+      g.gain.setValueAtTime(vol, t0);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(actx.destination);
+      o.start(t0); o.stop(t0 + dur);
+    } catch (e) {}
+  }
+
+  /* ================= STATE ================= */
+  var state = {
+    phase: 'menu',
+    hp: 100, maxHp: 100,
+    score: 0, wave: 0, combo: 1,
+    selectedTool: 0,
+    enemy: null,
+    projectile: null,
+    particles: [],
+    floaters: [],
+    shake: 0,
+    timeLeft: 0,
+    timeMax: MAX_TIME,
+    damageFlash: 0,
+    enemyAdvance: 0,
+    seenMixtures: [],
+    playerName: '',
+    lastEntry: null
+  };
+
+  /* ================= DOM ================= */
+  var toolbarEl   = document.getElementById('toolbar');
+  var hpfillEl    = document.getElementById('hpfill');
+  var scoreEl     = document.getElementById('scoreEl');
+  var waveEl      = document.getElementById('waveEl');
+  var comboEl     = document.getElementById('comboEl');
+  var timerWrap   = document.getElementById('timerWrap');
+  var timerFill   = document.getElementById('timerFill');
+  var timerLabel  = document.getElementById('timerLabel');
+  var fireBtn     = document.getElementById('fireBtn');
+  var startScreen = document.getElementById('startScreen');
+  var overScreen  = document.getElementById('overScreen');
+  var finalScore  = document.getElementById('finalScore');
+  var finalWave   = document.getElementById('finalWave');
+  var nameInput   = document.getElementById('nameInput');
+  var lbListStart = document.getElementById('lbListStart');
+  var lbListEnd   = document.getElementById('lbListEnd');
+  var newRecordEl = document.getElementById('newRecord');
+  var playerNameHUD = document.getElementById('playerNameHUD');
+  var overTitle   = document.getElementById('overTitle');
+
+  /* ================= TOOLBAR ================= */
+  for (var ti = 0; ti < TOOLS.length; ti++) {
+    (function (i) {
+      var t = TOOLS[i];
+      var d = document.createElement('div');
+      d.className = 'tool';
+      d.style.setProperty('--c', t.color);
+      d.innerHTML = '<div class="key">' + (i + 1) + '</div>' +
+                    '<div class="icon">' + t.icon + '</div>' +
+                    '<div class="name">' + t.short + '</div>';
+      function pick(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        initAudio();
+        selectTool(i);
+      }
+      d.addEventListener('click', pick);
+      d.addEventListener('touchstart', pick, { passive: false });
+      toolbarEl.appendChild(d);
+    })(ti);
+  }
+
+  function selectTool(i) {
+    if (state.phase !== 'playing') return;
+    state.selectedTool = i;
+    var kids = toolbarEl.children;
+    for (var k = 0; k < kids.length; k++) {
+      kids[k].classList.toggle('on', k === i);
+    }
+    beep(480 + i * 70, 0.04, 'triangle', 0.025);
+  }
+
+  /* ================= HELPERS ================= */
+  function toFa(n) {
+    return String(n).replace(/\d/g, function (d) {
+      return '۰۱۲۳۴۵۶۷۸۹'[d];
+    });
+  }
+
+  function getWaveTime(wave) {
+    if (wave >= JET_WAVE) return MIN_TIME;
+    // موج 1 = 10s ، موج 9 = 1s
+    var t = MAX_TIME - (wave - 1) * (MAX_TIME - MIN_TIME) / (JET_WAVE - 1);
+    return Math.max(MIN_TIME, t);
+  }
+
+  function isJetWave(wave) {
+    return wave >= JET_WAVE;
+  }
+
+  function pickMixture() {
+    if (isJetWave(state.wave) && state.seenMixtures.length > 0) {
+      return state.seenMixtures[Math.floor(Math.random() * state.seenMixtures.length)];
+    }
+    return MIXTURES[Math.floor(Math.random() * MIXTURES.length)];
+  }
+
+  /* ================= SPAWN ================= */
+  function spawnEnemy() {
+    var mix = pickMixture();
+    if (state.seenMixtures.indexOf(mix) === -1) {
+      state.seenMixtures.push(mix);
+    }
+    state.enemy = {
+      mix: mix,
+      x: W * (0.35 + Math.random() * 0.3),
+      distance: 1.0,
+      isJet: isJetWave(state.wave),
+      t: 0,
+      wrongFlash: 0
+    };
+    state.timeMax = getWaveTime(state.wave);
+    state.timeLeft = state.timeMax;
+    state.enemyAdvance = 0;
+    state.projectile = null;
+    timerWrap.classList.add('show');
+    beep(280, 0.2, 'sawtooth', 0.045, 200);
+  }
+
+  /* ================= DAMAGE ================= */
+  function damagePlayer(amount) {
+    state.hp = Math.max(0, state.hp - amount);
+    state.combo = 1;
+    state.shake = Math.min(state.shake + 10, 20);
+    state.damageFlash = 1;
+    beep(160, 0.18, 'sawtooth', 0.07, -80);
+    updateHUD();
+    if (state.hp <= 0) gameOver();
+  }
+
+  /* ================= FIRE ================= */
+  function fire() {
+    if (state.phase !== 'playing' || !state.enemy) return;
+    if (state.projectile) return;
+
+    var correctTool = state.enemy.mix.tool;
+    var isCorrect = (state.selectedTool === correctTool);
+
+    state.projectile = {
+      t: 0,
+      duration: isCorrect ? 0.4 : 0.5,
+      correct: isCorrect,
+      tool: state.selectedTool,
+      color: TOOLS[state.selectedTool].color
+    };
+    state.shake = Math.min(state.shake + 3, 10);
+    beep(880, 0.06, 'square', 0.035, -400);
+
+    for (var i = 0; i < 8; i++) {
+      var a = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+      var s = 120 + Math.random() * 220;
+      state.particles.push({
+        x: W / 2, y: H * 0.85,
+        vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 0.3, max: 0.3,
+        color: TOOLS[state.selectedTool].color,
+        size: 4 + Math.random() * 4
+      });
+    }
+  }
+
+  /* ================= RESOLVE ================= */
+  function resolveHit() {
+    var e = state.enemy;
+    if (!e || !state.projectile) return;
+
+    if (state.projectile.correct) {
+      for (var i = 0; i < 28; i++) {
+        var a = Math.random() * Math.PI * 2;
+        var s = 80 + Math.random() * 260;
+        state.particles.push({
+          x: e.x, y: enemyScreenY(e),
+          vx: Math.cos(a) * s, vy: Math.sin(a) * s - 50,
+          life: 0.5 + Math.random() * 0.6, max: 1.1,
+          color: Math.random() < 0.5 ? e.mix.c1 : e.mix.c2,
+          size: 3 + Math.random() * 5,
+          gravity: 200
+        });
+      }
+      var gain = 20 * state.combo;
+      state.score += gain;
+      state.combo = Math.min(state.combo + 1, 9);
+      state.floaters.push({
+        x: e.x, y: enemyScreenY(e) - 40,
+        text: 'جداسازی! +' + toFa(gain),
+        color: '#7fe7ff', life: 1.1, max: 1.1, size: 22
+      });
+      state.floaters.push({
+        x: e.x, y: enemyScreenY(e) - 65,
+        text: e.mix.name,
+        color: '#ffd54f', life: 1.1, max: 1.1, size: 15
+      });
+      beep(700, 0.12, 'triangle', 0.05, 500);
+      beep(1000, 0.1, 'sine', 0.04, 400);
+      state.shake = Math.min(state.shake + 8, 16);
+
+      state.enemy = null;
+      state.projectile = null;
+      timerWrap.classList.remove('show');
+      updateHUD();
+
+      setTimeout(function () {
+        if (state.phase === 'playing') nextWave();
+      }, 900);
+    } else {
+      e.wrongFlash = 0.5;
+      var correctToolName = TOOLS[e.mix.tool].name;
+      state.floaters.push({
+        x: e.x, y: enemyScreenY(e) - 40,
+        text: '✗ ابزار درست: ' + correctToolName,
+        color: '#ff5252', life: 1.4, max: 1.4, size: 15
+      });
+      damagePlayer(12);
+      state.timeLeft = Math.max(0.4, state.timeLeft - 0.8);
+      state.projectile = null;
+      beep(140, 0.1, 'sawtooth', 0.05, -60);
+    }
+  }
+
+  /* ================= WAVES ================= */
+  function nextWave() {
+    state.wave++;
+    updateHUD();
+    spawnEnemy();
+  }
+
+  /* ================= GAME FLOW ================= */
+  function startGame() {
+    initAudio();
+    var name = (nameInput.value || '').trim();
+    if (!name) name = 'دانش‌آموز';
+    state.playerName = name;
+    playerNameHUD.textContent = '👤 ' + name;
+    playerNameHUD.classList.add('show');
+
+    state.phase = 'playing';
+    state.hp = state.maxHp;
+    state.score = 0;
+    state.wave = 0;
+    state.combo = 1;
+    state.selectedTool = 0;
+    state.enemy = null;
+    state.projectile = null;
+    state.particles = [];
+    state.floaters = [];
+    state.seenMixtures = [];
+    state.shake = 0;
+    state.damageFlash = 0;
+    state.timeLeft = 0;
+    state.lastEntry = null;
+
+    var kids = toolbarEl.children;
+    for (var k = 0; k < kids.length; k++) {
+      kids[k].classList.toggle('on', k === 0);
+    }
+    timerWrap.classList.remove('show');
+    fireBtn.classList.add('show');
+    startScreen.classList.add('hide');
+    overScreen.classList.add('hide');
+    updateHUD();
+
+    setTimeout(function () {
+      if (state.phase === 'playing') nextWave();
+    }, 500);
+  }
+
+  function gameOver() {
+    state.phase = 'gameover';
+
+    // ذخیره در leaderboard
+    var result = saveToLeaderboard(state.playerName, state.score, state.wave);
+    state.lastEntry = result.entry;
+
+    // نمایش اطلاعات
+    finalScore.textContent = toFa(state.score);
+    finalWave.textContent = toFa(state.wave);
+
+    // اگر رکورد جدید بود
+    if (result.isNew && state.score > 0) {
+      newRecordEl.classList.add('show');
+      overTitle.textContent = 'رکورد جدید!';
+      overTitle.style.color = '#ffd54f';
+    } else {
+      newRecordEl.classList.remove('show');
+      overTitle.textContent = 'تانک از کار افتاد!';
+      overTitle.style.color = '#ff6b6b';
+    }
+
+    renderLeaderboard(lbListEnd, result.isNew ? result.entry : null);
+
+    overScreen.classList.remove('hide');
+    fireBtn.classList.remove('show');
+    timerWrap.classList.remove('show');
+    playerNameHUD.classList.remove('show');
+    beep(100, 0.7, 'sawtooth', 0.08, -70);
+  }
+
+  function backToMenu() {
+    state.phase = 'menu';
+    playerNameHUD.classList.remove('show');
+    fireBtn.classList.remove('show');
+    timerWrap.classList.remove('show');
+    overScreen.classList.add('hide');
+    startScreen.classList.remove('hide');
+    renderLeaderboard(lbListStart, null);
+  }
+
+  function updateHUD() {
+    hpfillEl.style.width = Math.max(0, (state.hp / state.maxHp) * 100) + '%';
+    scoreEl.textContent = toFa(state.score);
+    waveEl.textContent = toFa(state.wave);
+    comboEl.textContent = '×' + toFa(state.combo);
+  }
+
+  /* ================= INPUT ================= */
+  window.addEventListener('keydown', function (e) {
+    if (state.phase !== 'playing') {
+      if ((e.code === 'Enter' || e.code === 'Space') &&
+          document.activeElement !== nameInput) {
+        if (startScreen && !startScreen.classList.contains('hide')) startGame();
+      }
+      return;
+    }
+    if (e.code === 'Digit1') selectTool(0);
+    if (e.code === 'Digit2') selectTool(1);
+    if (e.code === 'Digit3') selectTool(2);
+    if (e.code === 'Digit4') selectTool(3);
+    if (e.code === 'Digit5') selectTool(4);
+    if (e.code === 'Digit6') selectTool(5);
+    if (e.code === 'Space' || e.code === 'Enter') {
+      e.preventDefault();
+      fire();
+    }
+  });
+
+  function fireDown(e) {
+    e.preventDefault(); e.stopPropagation();
+    initAudio();
+    fire();
+  }
+  fireBtn.addEventListener('touchstart', fireDown, { passive: false });
+  fireBtn.addEventListener('mousedown', fireDown);
+
+  function startDown(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    initAudio();
+    startGame();
+  }
+  document.getElementById('startBtn').addEventListener('click', startDown);
+  document.getElementById('startBtn').addEventListener('touchend', startDown, { passive: false });
+
+  function againDown(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    initAudio();
+    startGame();
+  }
+  document.getElementById('againBtn').addEventListener('click', againDown);
+  document.getElementById('againBtn').addEventListener('touchend', againDown, { passive: false });
+
+  function menuDown(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    initAudio();
+    backToMenu();
+  }
+  document.getElementById('menuBtn').addEventListener('click', menuDown);
+  document.getElementById('menuBtn').addEventListener('touchend', menuDown, { passive: false });
+
+  /* ================= SCREEN PROJECTION ================= */
+  function enemyScreenY(e) {
+    var nearness = 1 - e.distance;
+    var yTop = H * 0.42;
+    var yBottom = H * 0.72;
+    return yTop + (yBottom - yTop) * nearness;
+  }
+
+  function enemyScale(e) {
+    var nearness = 1 - e.distance;
+    return 0.5 + nearness * 0.9;
+  }
+
+  /* ================= UPDATE ================= */
+  function update(dt) {
+    state.shake *= Math.pow(0.0025, dt);
+    if (state.shake < 0.15) state.shake = 0;
+    state.damageFlash = Math.max(0, state.damageFlash - dt * 2);
+
+    for (var i = state.particles.length - 1; i >= 0; i--) {
+      var p = state.particles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      if (p.gravity) p.vy += p.gravity * dt;
+      p.vx *= Math.pow(0.15, dt);
+      p.life -= dt;
+      if (p.life <= 0) state.particles.splice(i, 1);
+    }
+    for (var j = state.floaters.length - 1; j >= 0; j--) {
+      var f = state.floaters[j];
+      f.y -= 35 * dt;
+      f.life -= dt;
+      if (f.life <= 0) state.floaters.splice(j, 1);
+    }
+
+    if (state.phase !== 'playing') return;
+
+    if (state.projectile) {
+      state.projectile.t += dt;
+      if (state.projectile.t >= state.projectile.duration) {
+        resolveHit();
+      }
+    }
+
+    if (state.enemy) {
+      var e = state.enemy;
+      e.t += dt;
+      e.wrongFlash = Math.max(0, e.wrongFlash - dt);
+      state.enemyAdvance += dt / state.timeMax;
+      e.distance = Math.max(0, 1 - state.enemyAdvance * 0.85);
+    }
+
+    if (state.enemy && !state.projectile) {
+      state.timeLeft -= dt;
+
+      var ratio = Math.max(0, state.timeLeft / state.timeMax);
+      timerFill.style.width = (ratio * 100) + '%';
+      timerFill.classList.remove('warn', 'danger');
+      if (ratio < 0.25) timerFill.classList.add('danger');
+      else if (ratio < 0.55) timerFill.classList.add('warn');
+      timerLabel.textContent = toFa(state.timeLeft.toFixed(1));
+
+      var tick = Math.ceil(state.timeLeft * 2) / 2;
+      if (Math.abs(state.timeLeft - tick) < dt * 0.6 &&
+          state.timeLeft < 2.5 && state.timeLeft > 0.1) {
+        beep(700, 0.04, 'square', 0.02, 0);
+      }
+
+      if (state.timeLeft <= 0) {
+        state.timeLeft = 0;
+        state.floaters.push({
+          x: state.enemy.x, y: enemyScreenY(state.enemy) - 40,
+          text: 'زمان تمام!',
+          color: '#ff5252', life: 1.2, max: 1.2, size: 20
+        });
+        beep(120, 0.3, 'sawtooth', 0.06, -50);
+        damagePlayer(18);
+        state.enemy = null;
+        timerWrap.classList.remove('show');
+        setTimeout(function () {
+          if (state.phase === 'playing') nextWave();
+        }, 700);
+      }
+    }
+  }
+
+  /* ================= RENDER ================= */
+  function render() {
+    ctx.save();
+    if (state.shake > 0.2) {
+      ctx.translate(
+        (Math.random() - 0.5) * state.shake,
+        (Math.random() - 0.5) * state.shake
+      );
+    }
+
+    drawSkyAndGround();
+    drawParticles();
+
+    if (state.phase !== 'menu') {
+      drawEnemy();
+      drawProjectile();
+      drawPlayerTurret();
+      drawCrosshair();
+    }
+
+    drawFloaters();
+    ctx.restore();
+
+    if (state.damageFlash > 0) drawDamageVignette();
+    drawVignette();
+  }
+
+  function drawSkyAndGround() {
+    var sky = ctx.createLinearGradient(0, -40, 0, H * 0.45);
+    sky.addColorStop(0, '#03060c');
+    sky.addColorStop(1, '#1a3550');
+    ctx.fillStyle = sky;
+    ctx.fillRect(-40, -40, W + 80, H * 0.45 + 40);
+
+    var ground = ctx.createLinearGradient(0, H * 0.45, 0, H + 40);
+    ground.addColorStop(0, '#0e1d2b');
+    ground.addColorStop(1, '#04070d');
+    ctx.fillStyle = ground;
+    ctx.fillRect(-40, H * 0.45, W + 80, H * 0.55 + 40);
+
+    var hg = ctx.createLinearGradient(0, H * 0.45 - 60, 0, H * 0.45 + 60);
+    hg.addColorStop(0, 'rgba(79,195,247,0)');
+    hg.addColorStop(0.5, 'rgba(79,195,247,.22)');
+    hg.addColorStop(1, 'rgba(79,195,247,0)');
+    ctx.fillStyle = hg;
+    ctx.fillRect(0, H * 0.45 - 60, W, 120);
+
+    ctx.strokeStyle = 'rgba(79,195,247,.08)';
+    ctx.lineWidth = 1;
+    for (var i = 0; i < 8; i++) {
+      var t = i / 7;
+      var y = H * 0.45 + t * t * (H * 0.55);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+      ctx.stroke();
+    }
+  }
+
+  function drawEnemy() {
+    var e = state.enemy;
+    if (!e) return;
+
+    var x = e.x;
+    var y = enemyScreenY(e);
+    var scale = enemyScale(e);
+    var mix = e.mix;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.shadowColor = mix.c1;
+    ctx.shadowBlur = 24;
+
+    if (e.isJet) drawFighterJet(e, mix);
+    else drawEnemyTank(e, mix);
+
+    ctx.restore();
+
+    if (e.wrongFlash > 0) {
+      ctx.save();
+      ctx.globalAlpha = (e.wrongFlash / 0.5) * 0.7;
+      ctx.strokeStyle = '#ff5252';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(x, y, 55 * scale, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    var label = mix.name;
+    ctx.font = '900 15px Vazirmatn, Tahoma, sans-serif';
+    var tw = ctx.measureText(label).width;
+    var bw = tw + 26;
+    var bh = 30;
+    var bx = x - bw / 2;
+    var by = y - 92 * scale;
+
+    ctx.save();
+    ctx.shadowColor = mix.c1;
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = 'rgba(6,10,16,.92)';
+    roundRect(ctx, bx, by, bw, bh, 11);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = mix.c1;
+    ctx.lineWidth = 2.5;
+    roundRect(ctx, bx, by, bw, bh, 11);
+    ctx.stroke();
+
+    ctx.fillStyle = '#eaf4ff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, by + bh / 2 + 1);
+    ctx.restore();
+
+    if (e.isJet) {
+      ctx.save();
+      ctx.font = '900 11px Vazirmatn, Tahoma, sans-serif';
+      ctx.fillStyle = '#ff5252';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚡ جت جنگنده — ۱ ثانیه!', x, by - 10);
+      ctx.restore();
+    }
+  }
+
+  function drawEnemyTank(e, mix) {
+    ctx.fillStyle = '#2a3a4d';
+    roundRect(ctx, -50, -18, 100, 36, 8);
+    ctx.fill();
+
+    ctx.fillStyle = mix.c1;
+    roundRect(ctx, -48, -6, 96, 8, 3);
+    ctx.fill();
+
+    ctx.fillStyle = '#1a2636';
+    roundRect(ctx, -22, -34, 44, 22, 6);
+    ctx.fill();
+    ctx.strokeStyle = mix.c1;
+    ctx.lineWidth = 2;
+    roundRect(ctx, -22, -34, 44, 22, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = mix.c1;
+    roundRect(ctx, -4, 8, 8, 26, 3);
+    ctx.fill();
+
+    ctx.fillStyle = '#0d1520';
+    for (var i = -3; i <= 3; i++) {
+      ctx.beginPath();
+      ctx.arc(i * 13, 22, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = 0.75;
+    for (var j = 0; j < 5; j++) {
+      var px = -38 + (j * 19);
+      ctx.fillStyle = j % 2 === 0 ? mix.c1 : mix.c2;
+      ctx.beginPath();
+      ctx.arc(px, -2 + Math.sin(e.t * 2 + j) * 2, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFighterJet(e, mix) {
+    var wobble = Math.sin(e.t * 4) * 3;
+    ctx.translate(0, wobble);
+
+    ctx.fillStyle = '#2a3a4d';
+    ctx.beginPath();
+    ctx.moveTo(-70, 8);
+    ctx.lineTo(-30, -12);
+    ctx.lineTo(-30, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(70, 8);
+    ctx.lineTo(30, -12);
+    ctx.lineTo(30, 16);
+    ctx.closePath();
+    ctx.fill();
+
+    var g = ctx.createLinearGradient(0, -25, 0, 25);
+    g.addColorStop(0, mix.c2);
+    g.addColorStop(0.5, mix.c1);
+    g.addColorStop(1, '#1a2636');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -32);
+    ctx.lineTo(-20, -8);
+    ctx.lineTo(-14, 22);
+    ctx.lineTo(14, 22);
+    ctx.lineTo(20, -8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = mix.c2;
+    ctx.beginPath();
+    ctx.arc(0, -26, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = mix.c1;
+    ctx.beginPath();
+    ctx.moveTo(-18, -2);
+    ctx.lineTo(-48, 4);
+    ctx.lineTo(-18, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(18, -2);
+    ctx.lineTo(48, 4);
+    ctx.lineTo(18, 8);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = mix.c2;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -20);
+    ctx.lineTo(0, 18);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.globalAlpha = 0.6 + Math.random() * 0.4;
+    ctx.fillStyle = '#ff9800';
+    ctx.shadowColor = '#ff5722';
+    ctx.shadowBlur = 20;
+    var flameH = 15 + Math.random() * 12;
+    ctx.beginPath();
+    ctx.moveTo(-7, 20);
+    ctx.lineTo(0, 20 + flameH);
+    ctx.lineTo(7, 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPlayerTurret() {
+    var tool = TOOLS[state.selectedTool];
+    var baseY = H * 0.92;
+    var cx = W / 2;
+
+    var bodyG = ctx.createLinearGradient(0, baseY - 20, 0, H + 20);
+    bodyG.addColorStop(0, '#1a2636');
+    bodyG.addColorStop(1, '#0a0f18');
+    ctx.fillStyle = bodyG;
+    ctx.fillRect(0, baseY - 10, W, H - baseY + 20);
+
+    ctx.save();
+    ctx.translate(cx, baseY);
+    ctx.shadowColor = tool.color;
+    ctx.shadowBlur = 30;
+
+    ctx.fillStyle = '#141e2e';
+    ctx.beginPath();
+    ctx.arc(0, 0, 42, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = tool.color;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    var barrelG = ctx.createLinearGradient(0, -140, 0, 0);
+    barrelG.addColorStop(0, tool.color);
+    barrelG.addColorStop(0.7, '#1a2636');
+    barrelG.addColorStop(1, '#0a0f18');
+    ctx.fillStyle = barrelG;
+    roundRect(ctx, -14, -130, 28, 130, 8);
+    ctx.fill();
+
+    ctx.fillStyle = tool.color;
+    ctx.beginPath();
+    ctx.arc(0, -122, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = '900 13px Vazirmatn, Tahoma, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(6,10,16,.85)';
+    var label = 'ابزار: ' + tool.name;
+    var tw = ctx.measureText(label).width;
+    roundRect(ctx, cx - tw / 2 - 14, baseY - 180, tw + 28, 28, 10);
+    ctx.fill();
+    ctx.strokeStyle = tool.color;
+    ctx.lineWidth = 2;
+    roundRect(ctx, cx - tw / 2 - 14, baseY - 180, tw + 28, 28, 10);
+    ctx.stroke();
+    ctx.fillStyle = tool.color;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, cx, baseY - 180 + 15);
+    ctx.restore();
+  }
+
+  function drawProjectile() {
+    var p = state.projectile;
+    if (!p) return;
+    var e = state.enemy;
+    if (!e) return;
+
+    var t = p.t / p.duration;
+    var startX = W / 2;
+    var startY = H * 0.78;
+    var endX = e.x;
+    var endY = enemyScreenY(e);
+    var x = startX + (endX - startX) * t;
+    var y = startY + (endY - startY) * t;
+
+    ctx.save();
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 25;
+    ctx.fillStyle = p.color;
+    ctx.translate(x, y);
+    var s = 12;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s * 0.6, 0);
+    ctx.lineTo(0, s);
+    ctx.lineTo(-s * 0.6, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCrosshair() {
+    var c = TOOLS[state.selectedTool].color;
+    var cx = W / 2, cy = H / 2;
+    ctx.save();
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = c;
+    ctx.shadowBlur = 10;
+    var gap = 7, len = 12;
+    ctx.beginPath();
+    ctx.moveTo(cx - gap - len, cy); ctx.lineTo(cx - gap, cy);
+    ctx.moveTo(cx + gap, cy);       ctx.lineTo(cx + gap + len, cy);
+    ctx.moveTo(cx, cy - gap - len); ctx.lineTo(cx, cy - gap);
+    ctx.moveTo(cx, cy + gap);       ctx.lineTo(cx, cy + gap + len);
+    ctx.stroke();
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (var i = 0; i < state.particles.length; i++) {
+      var p = state.particles[i];
+      var a = Math.max(0, p.life / p.max);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawFloaters() {
+    for (var i = 0; i < state.floaters.length; i++) {
+      var f = state.floaters[i];
+      var a = Math.max(0, f.life / f.max);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.font = '900 ' + f.size + 'px Vazirmatn, Tahoma, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = f.color;
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = f.color;
+      ctx.fillText(f.text, f.x, f.y);
+      ctx.restore();
+    }
+  }
+
+  function drawDamageVignette() {
+    var a = state.damageFlash;
+    ctx.save();
+    var g = ctx.createRadialGradient(
+      W / 2, H / 2, Math.min(W, H) * 0.2,
+      W / 2, H / 2, Math.max(W, H) * 0.7
+    );
+    g.addColorStop(0, 'rgba(255,0,0,0)');
+    g.addColorStop(1, 'rgba(255,30,30,' + (0.6 * a) + ')');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+  }
+
+  function drawVignette() {
+    var g = ctx.createRadialGradient(
+      W / 2, H / 2, Math.min(W, H) * 0.4,
+      W / 2, H / 2, Math.max(W, H) * 0.78
+    );
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, 'rgba(0,0,0,.6)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
+  /* ================= MAIN LOOP ================= */
+  var last = performance.now();
+  function loop(now) {
+    var dt = (now - last) / 1000;
+    last = now;
+    if (dt > 0.05) dt = 0.05;
+    if (dt < 0) dt = 0;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  /* ================= INIT ================= */
+  renderLeaderboard(lbListStart, null);
+  updateHUD();
+  requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>
